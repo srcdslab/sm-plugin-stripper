@@ -1,0 +1,17 @@
+project:
+  sourceknight: 0.1
+  name: stripper
+  dependencies:
+    - name: sourcemod
+      type: tar
+      version: 1.12.0-git6935
+      location: https://sm.alliedmods.net/smdrop/1.12/sourcemod-1.12.0-git6935-linux.tar.gz
+      unpack:
+      - source: /addons
+        dest: /addons
+
+  root: /
+  workdir: /
+  output: /plugins
+  targets:
+    - stripper
