@@ -20,10 +20,10 @@ native void Stripper_LogError(const char[] format, any ...);
  */
 forward void Stripper_OnErrorLogged(char[] sBuffer, int maxlen);
 
-public SharedPlugin __pl_sourcebanspp =
+public SharedPlugin __pl_stripper =
 {
 	name = "Stripper",
-	file = "stripper.smx",
+	file = "Stripper.smx",
 	#if defined REQUIRE_PLUGIN
 	required = 1
 	#else
