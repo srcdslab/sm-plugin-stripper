@@ -182,29 +182,29 @@ public void OnMapInit(const char[] mapName)
 
     // Parse global filters
     BuildPath(Path_SM, file, sizeof(file), "configs/stripper/global_filters.cfg");
-
     ParseFile(false);
 
     // Now parse map config
     strcopy(file, sizeof(file), mapName);
+    BuildPath(Path_SM, file, sizeof(file), "configs/stripper/maps/%s.cfg", file);
 
-    if(fileLowercase.BoolValue)
+    if(!ParseFile(true) && fileLowercase.BoolValue)
     {
         for(int i = 0; file[i]; i++)
             file[i] = CharToLower(file[i]);
+
+        BuildPath(Path_SM, file, sizeof(file), "configs/stripper/maps/%s.cfg", file);
+        ParseFile(true);
     }
-
-    BuildPath(Path_SM, file, sizeof(file), "configs/stripper/maps/%s.cfg", file);
-
-    ParseFile(true);
 }
 
 /**
  * Parses a stripper config file
  *
  * @param path		Path to parse from
+ * @return          True if successful, false otherwise
  */
-public void ParseFile(bool mapconfig)
+public bool ParseFile(bool mapconfig)
 {
     int line, col;
     section = 0;
@@ -217,8 +217,13 @@ public void ParseFile(bool mapconfig)
     SMCError result = SMC_ParseFile(parser, file, line, col);
     delete parser;
 
-    if (mapconfig && result == SMCError_Okay)
-        g_bConfigLoaded = true;
+    if (result == SMCError_Okay)
+    {
+        if (mapconfig)
+            g_bConfigLoaded = true;
+
+        return true;
+    }
 
     if(result != SMCError_Okay && result != SMCError_StreamOpen)
     {
@@ -235,6 +240,8 @@ public void ParseFile(bool mapconfig)
             Stripper_LogError("%s on line %d, col %d of %s", error, line, col, file);
         }
     }
+
+    return false;
 }
 
 public SMCResult Config_NewSection(SMCParser smc, const char[] name, bool opt_quotes)
@@ -308,7 +315,7 @@ public SMCResult Config_KeyValue(SMCParser smc, const char[] key, const char[] v
         case Mode_Add:
         {
             // Adding an entity without a classname will crash the server (shortest classname is "gib")
-            if(StrEqual(key, "classname", false) && strlen(value) > 2) prop.hasClassname = true;
+            if(strcmp(key, "classname", false) == 0 && strlen(value) > 2) prop.hasClassname = true;
 
             prop.insert.PushArray(kv);
         }
