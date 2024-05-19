@@ -8,7 +8,7 @@
 public Plugin myinfo =
 {
     name		= "Stripper:Source (SP edition)",
-    version		= "1.3.2",
+    version		= "1.3.3",
     description	= "Stripper:Source functionality in a Sourcemod plugin",
     author		= "Original Author: BAILOPAN. Ported to SM by: tilgep. Edited by: Lerrdy, .Rushaway",
     url			= "https://forums.alliedmods.net/showthread.php?t=339448"
@@ -115,7 +115,7 @@ public Action Command_Stripper(int client, int args)
     else
     {
         ReplyToCommand(client, "[Strippper] The current map did not load a stripper config.");
-        if(CheckCommandAccess(client, "sm_stripper", ADMFLAG_ROOT)) ReplyToCommand(client, "[Strippper] No file found: (%s)", file);
+        if(CheckCommandAccess(client, "sm_stripper", ADMFLAG_ROOT)) ReplyToCommand(client, "[Strippper] No file found.");
     }
         
     return Plugin_Handled;
