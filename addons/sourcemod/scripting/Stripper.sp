@@ -102,20 +102,21 @@ public void OnPluginStart()
 
 public Action Command_Stripper(int client, int args)
 {
+    bool bAccess = CheckCommandAccess(client, "sm_stripper", ADMFLAG_ROOT);
     if (g_bConfigLoaded)
     {
         ReplyToCommand(client, "[Strippper] The current map has a loaded stripper config.");
-        if(CheckCommandAccess(client, "sm_stripper", ADMFLAG_ROOT)) ReplyToCommand(client, "[Strippper] Actual cfg: %s", file);
+        if(bAccess) ReplyToCommand(client, "[Strippper] Actual cfg: %s", file);
     }
     else if (g_bConfigError)
     {
         ReplyToCommand(client, "[Strippper] The current map has a loaded stripper config but it contains error(s)");
-        if(CheckCommandAccess(client, "sm_stripper", ADMFLAG_ROOT)) ReplyToCommand(client, "[Strippper] Check (%s)", file);
+        if(bAccess) ReplyToCommand(client, "[Strippper] Check (%s)", file);
     }
     else
     {
         ReplyToCommand(client, "[Strippper] The current map did not load a stripper config.");
-        if(CheckCommandAccess(client, "sm_stripper", ADMFLAG_ROOT)) ReplyToCommand(client, "[Strippper] No file found.");
+        if(bAccess) ReplyToCommand(client, "[Strippper] No file found: (%s)", file);
     }
         
     return Plugin_Handled;
@@ -185,11 +186,11 @@ public void OnMapInit(const char[] mapName)
     ParseFile(false);
 
     // Now parse map config
-    strcopy(file, sizeof(file), mapName);
-    BuildPath(Path_SM, file, sizeof(file), "configs/stripper/maps/%s.cfg", file);
+    BuildPath(Path_SM, file, sizeof(file), "configs/stripper/maps/%s.cfg", mapName);
 
     if(!ParseFile(true) && fileLowercase.BoolValue)
     {
+        strcopy(file, sizeof(file), mapName);
         for(int i = 0; file[i]; i++)
             file[i] = CharToLower(file[i]);
 
