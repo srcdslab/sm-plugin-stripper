@@ -48,10 +48,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: dev-drprasad/delete-tag-and-release@v1.1
-        with:
-          delete_release: true
-          tag_name: latest
+      - name: Delete existing "latest" release and tag
+        run: |
+          set -euo pipefail
+          gh release delete latest --cleanup-tag --yes || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
