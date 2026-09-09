@@ -36,6 +36,26 @@ enum struct Property
     char key[PLATFORM_MAX_PATH];
     char val[PLATFORM_MAX_PATH];
     bool regex;
+    Regex compiled;	// Precompiled pattern, valid only when 'regex' is true
+}
+
+/**
+ * Closes every compiled Regex handle stored in an ArrayList of Property.
+ * The list itself is left untouched (callers Clear() it right after).
+ */
+static void FreeCompiledRegexes(ArrayList list)
+{
+    Property kv;
+    for(int i = 0; i < list.Length; i++)
+    {
+        list.GetArray(i, kv, sizeof(kv));
+        if(kv.compiled != null)
+        {
+            delete kv.compiled;
+            kv.compiled = null;
+            list.SetArray(i, kv, sizeof(kv));
+        }
+    }
 }
 
 /* Stripper block struct */
@@ -64,6 +84,12 @@ enum struct Block
         this.hasClassname = false;
         this.mode = Mode_None;
         this.submode = SubMode_None;
+
+        FreeCompiledRegexes(this.match);
+        FreeCompiledRegexes(this.replace);
+        FreeCompiledRegexes(this.del);
+        FreeCompiledRegexes(this.insert);
+
         this.match.Clear();
         this.replace.Clear();
         this.del.Clear();
@@ -98,6 +124,12 @@ public void OnPluginStart()
 
     g_cvFileLowercase = CreateConVar("stripper_file_lowercase", "0", "Whether to load map config filenames as lower case", _, true, 0.0, true, 1.0);
     AutoExecConfig(true, "stripper");
+}
+
+public void OnPluginEnd()
+{
+    // Release any compiled regex handles held by the last parsed block.
+    g_Block.Clear();
 }
 
 public Action Command_Stripper(int client, int args)
@@ -304,34 +336,47 @@ public SMCResult Config_NewSection(SMCParser smc, const char[] name, bool opt_qu
 
 public SMCResult Config_KeyValue(SMCParser smc, const char[] key, const char[] value, bool key_quotes, bool value_quotes)
 {
-    Property kv;
-    strcopy(kv.key, PLATFORM_MAX_PATH, key);
-    strcopy(kv.val, PLATFORM_MAX_PATH, value);
-    kv.regex = FormatRegex(kv.val, strlen(value));
-
+    // Resolve the destination list first so we never compile a regex we would throw away.
+    ArrayList target = null;
     switch(g_Block.mode)
     {
-        case Mode_None:		return SMCParse_Continue;
-        case Mode_Filter:	g_Block.match.PushArray(kv);
-        case Mode_Add:
-        {
-            // Adding an entity without a classname will crash the server (shortest classname is "gib")
-            if(strcmp(key, "classname", false) == 0 && strlen(value) > 2) g_Block.hasClassname = true;
-
-            g_Block.insert.PushArray(kv);
-        }
+        case Mode_Filter:	target = g_Block.match;
+        case Mode_Add:		target = g_Block.insert;
         case Mode_Modify:
         {
             switch(g_Block.submode)
             {
-                case SubMode_Match:		g_Block.match.PushArray(kv);
-                case SubMode_Replace:	g_Block.replace.PushArray(kv);
-                case SubMode_Delete:	g_Block.del.PushArray(kv);
-                case SubMode_Insert:	g_Block.insert.PushArray(kv);
+                case SubMode_Match:		target = g_Block.match;
+                case SubMode_Replace:	target = g_Block.replace;
+                case SubMode_Delete:	target = g_Block.del;
+                case SubMode_Insert:	target = g_Block.insert;
             }
         }
     }
 
+    if(target == null)
+        return SMCParse_Continue;
+
+    Property kv;
+    strcopy(kv.key, PLATFORM_MAX_PATH, key);
+    strcopy(kv.val, PLATFORM_MAX_PATH, value);
+
+    if(FormatRegex(kv.val, strlen(kv.val)))
+    {
+        kv.regex = true;
+        kv.compiled = CompileRegex(kv.val);
+        if(kv.compiled == null)
+        {
+            g_bConfigError = true;
+            Stripper_LogError("Invalid regex '/%s/' at section %d in file '%s'", kv.val, g_iSection, g_sFile);
+        }
+    }
+
+    // Adding an entity without a classname will crash the server (shortest classname is "gib")
+    if(g_Block.mode == Mode_Add && strcmp(key, "classname", false) == 0 && strlen(value) > 2)
+        g_Block.hasClassname = true;
+
+    target.PushArray(kv);
     return SMCParse_Continue;
 }
 
@@ -399,7 +444,7 @@ public void RunRemoveFilter()
             index = entry.GetNextKey(kv.key, val2, sizeof(val2));
             while(index != -1)
             {
-                if(EntPropsMatch(kv.val, val2, kv.regex))
+                if(EntPropsMatch(kv, val2))
                 {
                     matches++;
                     break;
@@ -466,7 +511,7 @@ public void RunModifyFilter()
             index = entry.GetNextKey(kv.key, val2, sizeof(val2));
             while(index != -1)
             {
-                if(EntPropsMatch(kv.val, val2, kv.regex))
+                if(EntPropsMatch(kv, val2))
                 {
                     matches++;
                     break;
@@ -494,7 +539,7 @@ public void RunModifyFilter()
                 index = entry.GetNextKey(kv.key, val2, sizeof(val2));
                 while(index != -1)
                 {
-                    if(EntPropsMatch(kv.val, val2, kv.regex))
+                    if(EntPropsMatch(kv, val2))
                     {
                         entry.Erase(index);
                         index--;
@@ -535,22 +580,23 @@ public void RunModifyFilter()
 }
 
 /**
- * Checks if 2 values match
+ * Checks whether an entity property value matches a config property.
  *
- * @param val1		First value
- * @param val2		Second value
- * @param isRegex	True if val1 should be treated as a regex pattern, false if not
+ * @param kv		Config property (its precompiled regex is used when kv.regex is set)
+ * @param val2		Entity property value to test
  * @return			True if match, false otherwise
- *
  */
-stock bool EntPropsMatch(const char[] val1, const char[] val2, bool isRegex)
+stock bool EntPropsMatch(const Property kv, const char[] val2)
 {
-    return isRegex ? SimpleRegexMatch(val2, val1) > 0 : !strcmp(val1, val2);
+    if(kv.regex)
+        return kv.compiled != null && MatchRegex(kv.compiled, val2) > 0;
+
+    return strcmp(kv.val, val2) == 0;
 }
 
 stock bool FormatRegex(char[] pattern, int len)
 {
-    if(pattern[0] == '/' && pattern[len-1] == '/')
+    if(len >= 2 && pattern[0] == '/' && pattern[len-1] == '/')
     {
         strcopy(pattern, len-1, pattern[1]);
         return true;
