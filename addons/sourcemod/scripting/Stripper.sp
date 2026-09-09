@@ -93,7 +93,7 @@ public void OnPluginStart()
 {
     g_Block.Init();
 
-    RegAdminCmd("stripper_dump", Command_Dump, ADMFLAG_ROOT, "Writes all of the map entity properties to a file in configs/stripper/dumps/");
+    RegAdminCmd("stripper_dump", Command_Dump, ADMFLAG_ROOT, "Writes all of the map entity properties to a file in logs/stripper/dumps/");
     RegAdminCmd("sm_stripper", Command_Stripper, ADMFLAG_GENERIC, "Prints out if the current map has a loaded stripper file");
 
     g_cvFileLowercase = CreateConVar("stripper_file_lowercase", "0", "Whether to load map config filenames as lower case", _, true, 0.0, true, 1.0);
@@ -105,18 +105,18 @@ public Action Command_Stripper(int client, int args)
     bool bAccess = CheckCommandAccess(client, "sm_stripper", ADMFLAG_ROOT);
     if (g_bConfigLoaded)
     {
-        ReplyToCommand(client, "[Strippper] The current map has a loaded stripper config.");
-        if(bAccess) ReplyToCommand(client, "[Strippper] Actual cfg: %s", g_sFile);
+        ReplyToCommand(client, "[Stripper] The current map has a loaded stripper config.");
+        if(bAccess) ReplyToCommand(client, "[Stripper] Loaded config: %s", g_sFile);
     }
     else if (g_bConfigError)
     {
-        ReplyToCommand(client, "[Strippper] The current map has a loaded stripper config but it contains error(s)");
-        if(bAccess) ReplyToCommand(client, "[Strippper] Check (%s)", g_sFile);
+        ReplyToCommand(client, "[Stripper] The current map loaded a stripper config but it contains error(s).");
+        if(bAccess) ReplyToCommand(client, "[Stripper] Check: %s", g_sFile);
     }
     else
     {
-        ReplyToCommand(client, "[Strippper] The current map did not load a stripper config.");
-        if(bAccess) ReplyToCommand(client, "[Strippper] No file found: (%s)", g_sFile);
+        ReplyToCommand(client, "[Stripper] The current map did not load a stripper config.");
+        if(bAccess) ReplyToCommand(client, "[Stripper] No file found: %s", g_sFile);
     }
 
     return Plugin_Handled;
@@ -169,7 +169,7 @@ public Action Command_Dump(int client, int args)
 
     delete fi;
 
-    ReplyToCommand(client, "[SM] Dumped entities to '%s'", path);
+    ReplyToCommand(client, "[Stripper] Dumped entities to '%s'", path);
     return Plugin_Handled;
 }
 
