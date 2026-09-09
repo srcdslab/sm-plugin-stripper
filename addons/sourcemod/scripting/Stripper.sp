@@ -159,7 +159,7 @@ public Action Command_Dump(int client, int args)
 
     BuildPath(Path_SM, buf2, PLATFORM_MAX_PATH, "logs/stripper/dumps");
 
-    if(!DirExists(buf2)) CreateDirectory(buf2, 0o666);
+    if(!DirExists(buf2)) CreateDirectory(buf2, 0o755);
 
     do
     {
@@ -218,11 +218,13 @@ public void OnMapInit(const char[] mapName)
 
     if(!ParseFile(true) && g_cvFileLowercase.BoolValue)
     {
-        strcopy(g_sFile, sizeof(g_sFile), mapName);
-        for(int i = 0; g_sFile[i]; i++)
-            g_sFile[i] = CharToLower(g_sFile[i]);
+        char lowerName[PLATFORM_MAX_PATH];
+        strcopy(lowerName, sizeof(lowerName), mapName);
+        for(int i = 0; lowerName[i]; i++)
+            lowerName[i] = CharToLower(lowerName[i]);
 
-        BuildPath(Path_SM, g_sFile, sizeof(g_sFile), "configs/stripper/maps/%s.cfg", g_sFile);
+        // NOTE: destination and format argument must not be the same buffer.
+        BuildPath(Path_SM, g_sFile, sizeof(g_sFile), "configs/stripper/maps/%s.cfg", lowerName);
         ParseFile(true);
     }
 }
@@ -248,20 +250,13 @@ public bool ParseFile(bool mapconfig)
         return true;
     }
 
-    if(result != SMCError_Okay && result != SMCError_StreamOpen)
+    // A missing file is not an error: global_filters.cfg and per-map configs are both optional.
+    if(result != SMCError_StreamOpen)
     {
-        if(result == SMCError_StreamOpen)
-        {
-            g_bConfigLoaded = false;
-            LogMessage("Failed to open stripper config \"%s\"", g_sFile);
-        }
-        else
-        {
-            char error[128];
-            g_bConfigError = true;
-            SMC_GetErrorString(result, error, sizeof(error));
-            Stripper_LogError("%s on line %d, col %d of %s", error, line, col, g_sFile);
-        }
+        char error[128];
+        g_bConfigError = true;
+        SMC_GetErrorString(result, error, sizeof(error));
+        Stripper_LogError("%s on line %d, col %d of %s", error, line, col, g_sFile);
     }
 
     return false;
