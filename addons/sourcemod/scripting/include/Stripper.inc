@@ -4,21 +4,21 @@
 #define _stripper_included
 
 /*********************************************************
- * Log a message into logs/stripper/maps/<mapname>.log
+ * Logs an error message into logs/stripper/maps/<mapname>.log
  *
- * @param format	Message to log
+ * @param format	Formatting rules.
+ * @param ...		Variable number of format parameters.
  * @noreturn
  *********************************************************/
 native void Stripper_LogError(const char[] format, any ...);
 
 /**
- * Called right after stripper loged a error.
+ * Called right after stripper logged an error.
  *
- * @param sBuffer      Buffer to store the log message in.
- * @param maxlen         Size of the log buffer.
+ * @param sBuffer	The error message that was logged.
  * @noreturn
  */
-forward void Stripper_OnErrorLogged(char[] sBuffer, int maxlen);
+forward void Stripper_OnErrorLogged(const char[] sBuffer);
 
 public SharedPlugin __pl_stripper =
 {
@@ -34,6 +34,6 @@ public SharedPlugin __pl_stripper =
 #if !defined REQUIRE_PLUGIN
 public void __pl_stripper_SetNTVOptional()
 {
-    MarkNativeAsOptional("Stripper_Log");
+    MarkNativeAsOptional("Stripper_LogError");
 }
 #endif
