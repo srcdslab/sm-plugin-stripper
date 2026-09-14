@@ -361,7 +361,11 @@ public SMCResult Config_KeyValue(SMCParser smc, const char[] key, const char[] v
     strcopy(kv.key, PLATFORM_MAX_PATH, key);
     strcopy(kv.val, PLATFORM_MAX_PATH, value);
 
-    if(FormatRegex(kv.val, strlen(kv.val)))
+    // Only match/delete targets ever read kv.regex/kv.compiled (see EntPropsMatch),
+    // so skip regex handling for replace/insert to avoid wasted compiles and false
+    // "Invalid regex" errors on values that merely look slash-delimited.
+    bool isMatchable = (target == g_Block.match || target == g_Block.del);
+    if(isMatchable && FormatRegex(kv.val, strlen(kv.val)))
     {
         kv.regex = true;
         kv.compiled = CompileRegex(kv.val);
