@@ -8,7 +8,7 @@
 public Plugin myinfo =
 {
     name		= "Stripper:Source (SP edition)",
-    version		= "1.3.6",
+    version		= "1.3.7",
     description	= "Stripper:Source functionality in a Sourcemod plugin",
     author		= "Original Author: BAILOPAN. Ported to SM by: tilgep. Edited by: Lerrdy, .Rushaway",
     url			= "https://forums.alliedmods.net/showthread.php?t=339448"
