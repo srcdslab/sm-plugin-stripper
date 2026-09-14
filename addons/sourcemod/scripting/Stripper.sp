@@ -8,7 +8,7 @@
 public Plugin myinfo =
 {
     name		= "Stripper:Source (SP edition)",
-    version		= "1.3.3",
+    version		= "1.3.4",
     description	= "Stripper:Source functionality in a Sourcemod plugin",
     author		= "Original Author: BAILOPAN. Ported to SM by: tilgep. Edited by: Lerrdy, .Rushaway",
     url			= "https://forums.alliedmods.net/showthread.php?t=339448"
@@ -71,14 +71,14 @@ enum struct Block
     }
 }
 
-char file[PLATFORM_MAX_PATH];
+char g_sFile[PLATFORM_MAX_PATH];
 char g_sLogPath[PLATFORM_MAX_PATH];
 bool g_bConfigLoaded = false;
 bool g_bConfigError = false;
 Handle g_hFwd_OnErrorLogged = INVALID_HANDLE;
-ConVar fileLowercase;
-Block prop; // Global current stripper block
-int section;
+ConVar g_cvFileLowercase;
+Block g_Block; // Global current stripper block
+int g_iSection;
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
@@ -91,12 +91,12 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart()
 {
-    prop.Init();
+    g_Block.Init();
 
     RegAdminCmd("stripper_dump", Command_Dump, ADMFLAG_ROOT, "Writes all of the map entity properties to a file in configs/stripper/dumps/");
     RegAdminCmd("sm_stripper", Command_Stripper, ADMFLAG_GENERIC, "Prints out if the current map has a loaded stripper file");
 
-    fileLowercase = CreateConVar("stripper_file_lowercase", "0", "Whether to load map config filenames as lower case", _, true, 0.0, true, 1.0);
+    g_cvFileLowercase = CreateConVar("stripper_file_lowercase", "0", "Whether to load map config filenames as lower case", _, true, 0.0, true, 1.0);
     AutoExecConfig(true, "stripper");
 }
 
@@ -106,19 +106,19 @@ public Action Command_Stripper(int client, int args)
     if (g_bConfigLoaded)
     {
         ReplyToCommand(client, "[Strippper] The current map has a loaded stripper config.");
-        if(bAccess) ReplyToCommand(client, "[Strippper] Actual cfg: %s", file);
+        if(bAccess) ReplyToCommand(client, "[Strippper] Actual cfg: %s", g_sFile);
     }
     else if (g_bConfigError)
     {
         ReplyToCommand(client, "[Strippper] The current map has a loaded stripper config but it contains error(s)");
-        if(bAccess) ReplyToCommand(client, "[Strippper] Check (%s)", file);
+        if(bAccess) ReplyToCommand(client, "[Strippper] Check (%s)", g_sFile);
     }
     else
     {
         ReplyToCommand(client, "[Strippper] The current map did not load a stripper config.");
-        if(bAccess) ReplyToCommand(client, "[Strippper] No file found: (%s)", file);
+        if(bAccess) ReplyToCommand(client, "[Strippper] No file found: (%s)", g_sFile);
     }
-        
+
     return Plugin_Handled;
 }
 
@@ -130,7 +130,7 @@ public Action Command_Dump(int client, int args)
     GetCurrentMap(buf1, PLATFORM_MAX_PATH);
 
     BuildPath(Path_SM, buf2, PLATFORM_MAX_PATH, "logs/stripper/dumps");
-    
+
     if(!DirExists(buf2)) CreateDirectory(buf2, 0o666);
 
     do
@@ -168,7 +168,7 @@ public Action Command_Dump(int client, int args)
     }
 
     delete fi;
-    
+
     ReplyToCommand(client, "[SM] Dumped entities to '%s'", path);
     return Plugin_Handled;
 }
@@ -182,19 +182,19 @@ public void OnMapInit(const char[] mapName)
     g_bConfigError = false;
 
     // Parse global filters
-    BuildPath(Path_SM, file, sizeof(file), "configs/stripper/global_filters.cfg");
+    BuildPath(Path_SM, g_sFile, sizeof(g_sFile), "configs/stripper/global_filters.cfg");
     ParseFile(false);
 
     // Now parse map config
-    BuildPath(Path_SM, file, sizeof(file), "configs/stripper/maps/%s.cfg", mapName);
+    BuildPath(Path_SM, g_sFile, sizeof(g_sFile), "configs/stripper/maps/%s.cfg", mapName);
 
-    if(!ParseFile(true) && fileLowercase.BoolValue)
+    if(!ParseFile(true) && g_cvFileLowercase.BoolValue)
     {
-        strcopy(file, sizeof(file), mapName);
-        for(int i = 0; file[i]; i++)
-            file[i] = CharToLower(file[i]);
+        strcopy(g_sFile, sizeof(g_sFile), mapName);
+        for(int i = 0; g_sFile[i]; i++)
+            g_sFile[i] = CharToLower(g_sFile[i]);
 
-        BuildPath(Path_SM, file, sizeof(file), "configs/stripper/maps/%s.cfg", file);
+        BuildPath(Path_SM, g_sFile, sizeof(g_sFile), "configs/stripper/maps/%s.cfg", g_sFile);
         ParseFile(true);
     }
 }
@@ -208,14 +208,14 @@ public void OnMapInit(const char[] mapName)
 public bool ParseFile(bool mapconfig)
 {
     int line, col;
-    section = 0;
+    g_iSection = 0;
 
-    prop.Clear();
+    g_Block.Clear();
 
     SMCParser parser = SMC_CreateParser();
     SMC_SetReaders(parser, Config_NewSection, Config_KeyValue, Config_EndSection);
 
-    SMCError result = SMC_ParseFile(parser, file, line, col);
+    SMCError result = SMC_ParseFile(parser, g_sFile, line, col);
     delete parser;
 
     if (result == SMCError_Okay)
@@ -231,14 +231,14 @@ public bool ParseFile(bool mapconfig)
         if(result == SMCError_StreamOpen)
         {
             g_bConfigLoaded = false;
-            LogMessage("Failed to open stripper config \"%s\"", file);
+            LogMessage("Failed to open stripper config \"%s\"", g_sFile);
         }
         else
         {
             char error[128];
             g_bConfigError = true;
             SMC_GetErrorString(result, error, sizeof(error));
-            Stripper_LogError("%s on line %d, col %d of %s", error, line, col, file);
+            Stripper_LogError("%s on line %d, col %d of %s", error, line, col, g_sFile);
         }
     }
 
@@ -247,56 +247,56 @@ public bool ParseFile(bool mapconfig)
 
 public SMCResult Config_NewSection(SMCParser smc, const char[] name, bool opt_quotes)
 {
-    section++;
+    g_iSection++;
     if(!strcmp(name, "filter:", false) || !strcmp(name, "remove:", false))
     {
-        if(prop.mode != Mode_None)
+        if(g_Block.mode != Mode_None)
         {
             g_bConfigError = true;
-            Stripper_LogError("Found 'filter' block while inside another block at section %d in file '%s'", section, file);
+            Stripper_LogError("Found 'filter' block while inside another block at section %d in file '%s'", g_iSection, g_sFile);
         }
 
-        prop.Clear();
-        prop.mode = Mode_Filter;
+        g_Block.Clear();
+        g_Block.mode = Mode_Filter;
     }
     else if(!strcmp(name, "add:", false))
     {
-        if(prop.mode != Mode_None)
+        if(g_Block.mode != Mode_None)
         {
             g_bConfigError = true;
-            Stripper_LogError("Found 'add' block while inside another block at section %d in file '%s'", section, file);
+            Stripper_LogError("Found 'add' block while inside another block at section %d in file '%s'", g_iSection, g_sFile);
         }
 
-        prop.Clear();
-        prop.mode = Mode_Add;
+        g_Block.Clear();
+        g_Block.mode = Mode_Add;
     }
     else if(!strcmp(name, "modify:", false))
     {
-        if(prop.mode != Mode_None)
+        if(g_Block.mode != Mode_None)
         {
             g_bConfigError = true;
-            Stripper_LogError("Found 'modify' block while inside another block at section %d in file '%s'", section, file);
+            Stripper_LogError("Found 'modify' block while inside another block at section %d in file '%s'", g_iSection, g_sFile);
         }
 
-        prop.Clear();
-        prop.mode = Mode_Modify;
+        g_Block.Clear();
+        g_Block.mode = Mode_Modify;
     }
-    else if(prop.mode == Mode_Modify)
+    else if(g_Block.mode == Mode_Modify)
     {
-        if(!strcmp(name, "match:", false))			prop.submode = SubMode_Match;
-        else if(!strcmp(name, "replace:", false))	prop.submode = SubMode_Replace;
-        else if(!strcmp(name, "delete:", false))	prop.submode = SubMode_Delete;
-        else if(!strcmp(name, "insert:", false))	prop.submode = SubMode_Insert;
+        if(!strcmp(name, "match:", false))			g_Block.submode = SubMode_Match;
+        else if(!strcmp(name, "replace:", false))	g_Block.submode = SubMode_Replace;
+        else if(!strcmp(name, "delete:", false))	g_Block.submode = SubMode_Delete;
+        else if(!strcmp(name, "insert:", false))	g_Block.submode = SubMode_Insert;
         else
         {
             g_bConfigError = true;
-            Stripper_LogError("Found invalid section '%s' in modify block at section %d in file '%s'", name, section, file);
+            Stripper_LogError("Found invalid section '%s' in modify block at section %d in file '%s'", name, g_iSection, g_sFile);
         }
     }
     else
     {
         g_bConfigError = true;
-        Stripper_LogError("Found invalid section name '%s' at section %d in file '%s'", name, section, file);
+        Stripper_LogError("Found invalid section name '%s' at section %d in file '%s'", name, g_iSection, g_sFile);
     }
 
     return SMCParse_Continue;
@@ -309,25 +309,25 @@ public SMCResult Config_KeyValue(SMCParser smc, const char[] key, const char[] v
     strcopy(kv.val, PLATFORM_MAX_PATH, value);
     kv.regex = FormatRegex(kv.val, strlen(value));
 
-    switch(prop.mode)
+    switch(g_Block.mode)
     {
         case Mode_None:		return SMCParse_Continue;
-        case Mode_Filter:	prop.match.PushArray(kv);
+        case Mode_Filter:	g_Block.match.PushArray(kv);
         case Mode_Add:
         {
             // Adding an entity without a classname will crash the server (shortest classname is "gib")
-            if(strcmp(key, "classname", false) == 0 && strlen(value) > 2) prop.hasClassname = true;
+            if(strcmp(key, "classname", false) == 0 && strlen(value) > 2) g_Block.hasClassname = true;
 
-            prop.insert.PushArray(kv);
+            g_Block.insert.PushArray(kv);
         }
         case Mode_Modify:
         {
-            switch(prop.submode)
+            switch(g_Block.submode)
             {
-                case SubMode_Match:		prop.match.PushArray(kv);
-                case SubMode_Replace:	prop.replace.PushArray(kv);
-                case SubMode_Delete:	prop.del.PushArray(kv);
-                case SubMode_Insert:	prop.insert.PushArray(kv);
+                case SubMode_Match:		g_Block.match.PushArray(kv);
+                case SubMode_Replace:	g_Block.replace.PushArray(kv);
+                case SubMode_Delete:	g_Block.del.PushArray(kv);
+                case SubMode_Insert:	g_Block.insert.PushArray(kv);
             }
         }
     }
@@ -337,42 +337,42 @@ public SMCResult Config_KeyValue(SMCParser smc, const char[] key, const char[] v
 
 public SMCResult Config_EndSection(SMCParser smc)
 {
-    switch(prop.mode)
+    switch(g_Block.mode)
     {
         case Mode_Filter:
         {
-            if(prop.match.Length > 0) RunRemoveFilter();
+            if(g_Block.match.Length > 0) RunRemoveFilter();
 
-            prop.mode = Mode_None;
+            g_Block.mode = Mode_None;
         }
         case Mode_Add:
         {
-            if(prop.insert.Length > 0)
+            if(g_Block.insert.Length > 0)
             {
-                if(prop.hasClassname)
+                if(g_Block.hasClassname)
                     RunAddFilter();
                 else
                 {
                     g_bConfigError = true;
-                    Stripper_LogError("Add block with no classname found at section %d in file '%s'", section, file);
+                    Stripper_LogError("Add block with no classname found at section %d in file '%s'", g_iSection, g_sFile);
                 }
             }
 
-            prop.mode = Mode_None;
+            g_Block.mode = Mode_None;
         }
         case Mode_Modify:
         {
             // Exiting a modify sub-block
-            if(prop.submode != SubMode_None)
+            if(g_Block.submode != SubMode_None)
             {
-                prop.submode = SubMode_None;
+                g_Block.submode = SubMode_None;
                 return SMCParse_Continue;
             }
 
             // Must have something to match for modify blocks
-            if(prop.match.Length > 0) RunModifyFilter();
+            if(g_Block.match.Length > 0) RunModifyFilter();
 
-            prop.mode = Mode_None;
+            g_Block.mode = Mode_None;
         }
     }
     return SMCParse_Continue;
@@ -380,7 +380,7 @@ public SMCResult Config_EndSection(SMCParser smc)
 
 public void RunRemoveFilter()
 {
-    /* prop.match holds what we want
+    /* g_Block.match holds what we want
      * we know it has at least 1 entry here
      */
 
@@ -392,9 +392,9 @@ public void RunRemoveFilter()
         matches = 0;
         entry = EntityLump.Get(i);
 
-        for(j = 0; j < prop.match.Length; j++)
+        for(j = 0; j < g_Block.match.Length; j++)
         {
-            prop.match.GetArray(j, kv, sizeof(kv));
+            g_Block.match.GetArray(j, kv, sizeof(kv));
 
             index = entry.GetNextKey(kv.key, val2, sizeof(val2));
             while(index != -1)
@@ -409,7 +409,7 @@ public void RunRemoveFilter()
             }
         }
 
-        if(matches == prop.match.Length)
+        if(matches == g_Block.match.Length)
         {
             EntityLump.Erase(i);
             i--;
@@ -420,7 +420,7 @@ public void RunRemoveFilter()
 
 public void RunAddFilter()
 {
-    /* prop.insert holds what we want
+    /* g_Block.insert holds what we want
      * we know it has at least 1 entry here
      */
 
@@ -428,9 +428,9 @@ public void RunAddFilter()
     EntityLumpEntry entry = EntityLump.Get(index);
 
     Property kv;
-    for(int i; i < prop.insert.Length; i++)
+    for(int i; i < g_Block.insert.Length; i++)
     {
-        prop.insert.GetArray(i, kv, sizeof(kv));
+        g_Block.insert.GetArray(i, kv, sizeof(kv));
         entry.Append(kv.key, kv.val);
     }
 
@@ -439,12 +439,12 @@ public void RunAddFilter()
 
 public void RunModifyFilter()
 {
-    /* prop.match holds at least 1 entry here
+    /* g_Block.match holds at least 1 entry here
      * others may not have anything
      */
 
     // Nothing to do if these are all empty
-    if(prop.replace.Length == 0 && prop.del.Length == 0 && prop.insert.Length == 0)
+    if(g_Block.replace.Length == 0 && g_Block.del.Length == 0 && g_Block.insert.Length == 0)
     {
         return;
     }
@@ -459,9 +459,9 @@ public void RunModifyFilter()
         entry = EntityLump.Get(i);
 
         /* Check matches */
-        for(j = 0; j < prop.match.Length; j++)
+        for(j = 0; j < g_Block.match.Length; j++)
         {
-            prop.match.GetArray(j, kv, sizeof(kv));
+            g_Block.match.GetArray(j, kv, sizeof(kv));
 
             index = entry.GetNextKey(kv.key, val2, sizeof(val2));
             while(index != -1)
@@ -476,7 +476,7 @@ public void RunModifyFilter()
             }
         }
 
-        if(matches < prop.match.Length)
+        if(matches < g_Block.match.Length)
         {
             delete entry;
             continue;
@@ -485,11 +485,11 @@ public void RunModifyFilter()
         /* This entry matches, perform any changes */
 
         /* First do deletions */
-        if(prop.del.Length > 0)
+        if(g_Block.del.Length > 0)
         {
-            for(j = 0; j < prop.del.Length; j++)
+            for(j = 0; j < g_Block.del.Length; j++)
             {
-                prop.del.GetArray(j, kv, sizeof(kv));
+                g_Block.del.GetArray(j, kv, sizeof(kv));
 
                 index = entry.GetNextKey(kv.key, val2, sizeof(val2));
                 while(index != -1)
@@ -505,11 +505,11 @@ public void RunModifyFilter()
         }
 
         /* do replacements */
-        if(prop.replace.Length > 0)
+        if(g_Block.replace.Length > 0)
         {
-            for(j = 0; j < prop.replace.Length; j++)
+            for(j = 0; j < g_Block.replace.Length; j++)
             {
-                prop.replace.GetArray(j, kv, sizeof(kv));
+                g_Block.replace.GetArray(j, kv, sizeof(kv));
 
                 index = entry.GetNextKey(kv.key, val2, sizeof(val2));
                 while(index != -1)
@@ -521,11 +521,11 @@ public void RunModifyFilter()
         }
 
         /* do insertions */
-        if(prop.insert.Length > 0)
+        if(g_Block.insert.Length > 0)
         {
-            for(j = 0; j < prop.insert.Length; j++)
+            for(j = 0; j < g_Block.insert.Length; j++)
             {
-                prop.insert.GetArray(j, kv, sizeof(kv));
+                g_Block.insert.GetArray(j, kv, sizeof(kv));
                 entry.Append(kv.key, kv.val);
             }
         }
