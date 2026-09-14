@@ -16,4 +16,4 @@ Forum thread for this plugin: https://forums.alliedmods.net/showthread.php?t=339
 `stripper_file_lowercase` - Whether to load map config filenames as lower case
 
 ### Commands
-`stripper_dump` - dumps all current entity properties to a file in `configs/stripper/dumps/`
+`stripper_dump` - dumps all current entity properties to a file in `logs/stripper/dumps/`
