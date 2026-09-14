@@ -124,7 +124,6 @@ public void OnPluginStart()
 
 public void OnPluginEnd()
 {
-    // Release any compiled regex handles held by the last parsed block.
     g_Block.Clear();
 }
 
@@ -157,9 +156,10 @@ public Action Command_Dump(int client, int args)
 
     GetCurrentMap(buf1, PLATFORM_MAX_PATH);
 
-    BuildPath(Path_SM, buf2, PLATFORM_MAX_PATH, "logs/stripper/dumps");
+    CreateDirRecursive("logs/stripper");
+    CreateDirRecursive("logs/stripper/dumps");
 
-    if(!DirExists(buf2)) CreateDirectory(buf2, 0o755);
+    BuildPath(Path_SM, buf2, PLATFORM_MAX_PATH, "logs/stripper/dumps");
 
     do
     {
@@ -201,10 +201,32 @@ public Action Command_Dump(int client, int args)
     return Plugin_Handled;
 }
 
+static void CreateDirRecursive(const char[] relPath)
+{
+    char path[PLATFORM_MAX_PATH];
+    BuildPath(Path_SM, path, sizeof(path), "%s", relPath);
+    if (!DirExists(path))
+        CreateDirectory(path, 0o755);
+
+    SetFilePermissions(path, FPERM_U_READ|FPERM_U_WRITE|FPERM_U_EXEC|FPERM_G_READ|FPERM_G_EXEC|FPERM_O_READ|FPERM_O_EXEC);
+}
+
+static void BuildLogPath(char[] buffer, int maxlen)
+{
+    char mapName[PLATFORM_MAX_PATH];
+    GetCurrentMap(mapName, sizeof(mapName));
+
+    CreateDirRecursive("logs");
+    CreateDirRecursive("logs/stripper");
+    CreateDirRecursive("logs/stripper/maps");
+
+    BuildPath(Path_SM, buffer, maxlen, "logs/stripper/maps/%s.log", mapName);
+}
+
 public void OnMapInit(const char[] mapName)
 {
     // Path used for logging.
-    BuildPath(Path_SM, g_sLogPath, sizeof(g_sLogPath), "logs/stripper/maps/%s.log", mapName);
+    BuildLogPath(g_sLogPath, sizeof(g_sLogPath));
 
     g_bConfigLoaded = false;
     g_bConfigError = false;
@@ -218,13 +240,11 @@ public void OnMapInit(const char[] mapName)
 
     if(!ParseFile(true) && g_cvFileLowercase.BoolValue)
     {
-        char lowerName[PLATFORM_MAX_PATH];
-        strcopy(lowerName, sizeof(lowerName), mapName);
-        for(int i = 0; lowerName[i]; i++)
-            lowerName[i] = CharToLower(lowerName[i]);
+        strcopy(g_sFile, sizeof(g_sFile), mapName);
+        for(int i = 0; g_sFile[i]; i++)
+            g_sFile[i] = CharToLower(g_sFile[i]);
 
-        // NOTE: destination and format argument must not be the same buffer.
-        BuildPath(Path_SM, g_sFile, sizeof(g_sFile), "configs/stripper/maps/%s.cfg", lowerName);
+        BuildPath(Path_SM, g_sFile, sizeof(g_sFile), "configs/stripper/maps/%s.cfg", g_sFile);
         ParseFile(true);
     }
 }
@@ -250,13 +270,20 @@ public bool ParseFile(bool mapconfig)
         return true;
     }
 
-    // A missing file is not an error: global_filters.cfg and per-map configs are both optional.
-    if(result != SMCError_StreamOpen)
+    if(result != SMCError_Okay && result != SMCError_StreamOpen)
     {
-        char error[128];
-        g_bConfigError = true;
-        SMC_GetErrorString(result, error, sizeof(error));
-        Stripper_LogError("%s on line %d, col %d of %s", error, line, col, g_sFile);
+        if(result == SMCError_StreamOpen)
+        {
+            g_bConfigLoaded = false;
+            LogMessage("Failed to open stripper config \"%s\"", g_sFile);
+        }
+        else
+        {
+            char error[128];
+            g_bConfigError = true;
+            SMC_GetErrorString(result, error, sizeof(error));
+            Stripper_LogError("%s on line %d, col %d of %s", error, line, col, g_sFile);
+        }
     }
 
     return false;
@@ -596,6 +623,11 @@ public int Native_Log(Handle plugin, int numParams)
 {
     char sBuffer[2048];
     FormatNativeString(0, 1, 2, sizeof(sBuffer), _, sBuffer);
+
+    // OnMapInit may not have run yet for a plugin loaded mid-map.
+    if(g_sLogPath[0] == '\0')
+        BuildLogPath(g_sLogPath, sizeof(g_sLogPath));
+
     LogToFileEx(g_sLogPath, "%s", sBuffer);
 
     // Start forward call
