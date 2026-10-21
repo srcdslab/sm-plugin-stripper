@@ -8,7 +8,7 @@
 public Plugin myinfo =
 {
     name		= "Stripper:Source (SP edition)",
-    version		= "1.3.7",
+    version		= "1.3.8",
     description	= "Stripper:Source functionality in a Sourcemod plugin",
     author		= "Original Author: BAILOPAN. Ported to SM by: tilgep. Edited by: Lerrdy, .Rushaway",
     url			= "https://forums.alliedmods.net/showthread.php?t=339448"
@@ -48,7 +48,6 @@ static void FreeCompiledRegexes(ArrayList list)
         if(kv.compiled != null)
         {
             delete kv.compiled;
-            kv.compiled = null;
             list.SetArray(i, kv, sizeof(kv));
         }
     }
@@ -69,10 +68,10 @@ enum struct Block
     {
         this.mode = Mode_None;
         this.submode = SubMode_None;
-        this.match = CreateArray(sizeof(Property));
-        this.replace = CreateArray(sizeof(Property));
-        this.del = CreateArray(sizeof(Property));
-        this.insert = CreateArray(sizeof(Property));
+        this.match = new ArrayList(sizeof(Property));
+        this.replace = new ArrayList(sizeof(Property));
+        this.del = new ArrayList(sizeof(Property));
+        this.insert = new ArrayList(sizeof(Property));
     }
 
     void Clear()
@@ -97,7 +96,7 @@ char g_sFile[PLATFORM_MAX_PATH];
 char g_sLogPath[PLATFORM_MAX_PATH];
 bool g_bConfigLoaded = false;
 bool g_bConfigError = false;
-Handle g_hFwd_OnErrorLogged = INVALID_HANDLE;
+GlobalForward g_hFwd_OnErrorLogged = null;
 ConVar g_cvFileLowercase;
 Block g_Block; // Global current stripper block
 int g_iSection;
@@ -105,7 +104,7 @@ int g_iSection;
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
     CreateNative("Stripper_LogError", Native_Log);
-    g_hFwd_OnErrorLogged = CreateGlobalForward("Stripper_OnErrorLogged", ET_Ignore, Param_String);
+    g_hFwd_OnErrorLogged = new GlobalForward("Stripper_OnErrorLogged", ET_Ignore, Param_String);
 
     RegPluginLibrary("Stripper");
     return APLRes_Success;
@@ -256,10 +255,12 @@ public bool ParseFile(bool mapconfig)
 
     g_Block.Clear();
 
-    SMCParser parser = SMC_CreateParser();
-    SMC_SetReaders(parser, Config_NewSection, Config_KeyValue, Config_EndSection);
+    SMCParser parser = new SMCParser();
+    parser.OnEnterSection = Config_NewSection;
+    parser.OnKeyValue = Config_KeyValue;
+    parser.OnLeaveSection = Config_EndSection;
 
-    SMCError result = SMC_ParseFile(parser, g_sFile, line, col);
+    SMCError result = parser.ParseFile(g_sFile, line, col);
     delete parser;
 
     if (result == SMCError_Okay)
@@ -377,7 +378,7 @@ public SMCResult Config_KeyValue(SMCParser smc, const char[] key, const char[] v
     if(isMatchable && FormatRegex(kv.val, strlen(kv.val)))
     {
         kv.regex = true;
-        kv.compiled = CompileRegex(kv.val);
+        kv.compiled = new Regex(kv.val);
         if(kv.compiled == null)
         {
             g_bConfigError = true;
@@ -602,7 +603,7 @@ public void RunModifyFilter()
 stock bool EntPropsMatch(const Property kv, const char[] val2)
 {
     if(kv.regex)
-        return kv.compiled != null && MatchRegex(kv.compiled, val2) > 0;
+        return kv.compiled != null && kv.compiled.Match(val2) > 0;
 
     return strcmp(kv.val, val2) == 0;
 }
