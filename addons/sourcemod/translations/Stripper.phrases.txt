@@ -1,0 +1,77 @@
+"Phrases"
+{
+	"Config Loaded"
+	{
+		"en"		"The current map has a loaded stripper config."
+		"fr"		"La map actuelle a une config stripper chargée."
+		"ru"		"Для текущей карты загружен конфиг stripper."
+		"es"		"El mapa actual tiene una configuración de stripper cargada."
+		"de"		"Für die aktuelle Map ist eine Stripper-Konfiguration geladen."
+		"pt"		"O mapa atual tem uma configuração do stripper carregada."
+		"chi"		"当前地图已加载 stripper 配置。"
+	}
+	"Config Loaded File"
+	{
+		"#format"	"{1:s}"
+		"en"		"Loaded config: {1}"
+		"fr"		"Config chargée : {1}"
+		"ru"		"Загруженный конфиг: {1}"
+		"es"		"Configuración cargada: {1}"
+		"de"		"Geladene Konfiguration: {1}"
+		"pt"		"Configuração carregada: {1}"
+		"chi"		"已加载的配置：{1}"
+	}
+	"Config Error"
+	{
+		"en"		"The current map loaded a stripper config but it contains error(s)."
+		"fr"		"La map actuelle a chargé une config stripper, mais elle contient des erreurs."
+		"ru"		"Для текущей карты загружен конфиг stripper, но в нём есть ошибки."
+		"es"		"El mapa actual cargó una configuración de stripper, pero contiene errores."
+		"de"		"Die aktuelle Map hat eine Stripper-Konfiguration geladen, sie enthält aber Fehler."
+		"pt"		"O mapa atual carregou uma configuração do stripper, mas ela contém erros."
+		"chi"		"当前地图已加载 stripper 配置，但其中存在错误。"
+	}
+	"Config Error File"
+	{
+		"#format"	"{1:s}"
+		"en"		"Check: {1}"
+		"fr"		"À vérifier : {1}"
+		"ru"		"Проверьте: {1}"
+		"es"		"Revisa: {1}"
+		"de"		"Prüfe: {1}"
+		"pt"		"Verifique: {1}"
+		"chi"		"请检查：{1}"
+	}
+	"Config Not Loaded"
+	{
+		"en"		"The current map did not load a stripper config."
+		"fr"		"La map actuelle n'a chargé aucune config stripper."
+		"ru"		"Для текущей карты конфиг stripper не загружен."
+		"es"		"El mapa actual no cargó ninguna configuración de stripper."
+		"de"		"Die aktuelle Map hat keine Stripper-Konfiguration geladen."
+		"pt"		"O mapa atual não carregou nenhuma configuração do stripper."
+		"chi"		"当前地图未加载 stripper 配置。"
+	}
+	"Config Not Found File"
+	{
+		"#format"	"{1:s}"
+		"en"		"No file found: {1}"
+		"fr"		"Aucun fichier trouvé : {1}"
+		"ru"		"Файл не найден: {1}"
+		"es"		"No se encontró el archivo: {1}"
+		"de"		"Keine Datei gefunden: {1}"
+		"pt"		"Nenhum arquivo encontrado: {1}"
+		"chi"		"未找到文件：{1}"
+	}
+	"Entities Dumped"
+	{
+		"#format"	"{1:s}"
+		"en"		"Dumped entities to '{1}'"
+		"fr"		"Entités exportées dans '{1}'"
+		"ru"		"Энтити сохранены в '{1}'"
+		"es"		"Entidades volcadas en '{1}'"
+		"de"		"Entitäten nach '{1}' exportiert"
+		"pt"		"Entidades exportadas para '{1}'"
+		"chi"		"实体已导出至 '{1}'"
+	}
+}
