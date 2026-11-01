@@ -8,7 +8,7 @@
 public Plugin myinfo =
 {
     name		= "Stripper:Source (SP edition)",
-    version		= "1.3.9",
+    version		= "1.3.10",
     description	= "Stripper:Source functionality in a Sourcemod plugin",
     author		= "Original Author: BAILOPAN. Ported to SM by: tilgep. Edited by: Lerrdy, .Rushaway",
     url			= "https://forums.alliedmods.net/showthread.php?t=339448"
@@ -130,7 +130,7 @@ public void OnPluginEnd()
 
 public Action Command_Stripper(int client, int args)
 {
-    bool bAccess = CheckCommandAccess(client, "sm_stripper", ADMFLAG_ROOT);
+    bool bAccess = CheckCommandAccess(client, "sm_stripper_path", ADMFLAG_ROOT);
     if (g_bConfigLoaded)
     {
         ReplyToCommand(client, "[Stripper] %t", "Config Loaded");
