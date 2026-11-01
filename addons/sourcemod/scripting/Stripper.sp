@@ -8,7 +8,7 @@
 public Plugin myinfo =
 {
     name		= "Stripper:Source (SP edition)",
-    version		= "1.3.8",
+    version		= "1.3.9",
     description	= "Stripper:Source functionality in a Sourcemod plugin",
     author		= "Original Author: BAILOPAN. Ported to SM by: tilgep. Edited by: Lerrdy, .Rushaway",
     url			= "https://forums.alliedmods.net/showthread.php?t=339448"
@@ -114,6 +114,8 @@ public void OnPluginStart()
 {
     g_Block.Init();
 
+    LoadTranslations("Stripper.phrases");
+
     RegAdminCmd("stripper_dump", Command_Dump, ADMFLAG_ROOT, "Writes all of the map entity properties to a file in logs/stripper/dumps/");
     RegAdminCmd("sm_stripper", Command_Stripper, ADMFLAG_GENERIC, "Prints out if the current map has a loaded stripper file");
 
@@ -131,18 +133,18 @@ public Action Command_Stripper(int client, int args)
     bool bAccess = CheckCommandAccess(client, "sm_stripper", ADMFLAG_ROOT);
     if (g_bConfigLoaded)
     {
-        ReplyToCommand(client, "[Stripper] The current map has a loaded stripper config.");
-        if(bAccess) ReplyToCommand(client, "[Stripper] Loaded config: %s", g_sFile);
+        ReplyToCommand(client, "[Stripper] %t", "Config Loaded");
+        if(bAccess) ReplyToCommand(client, "[Stripper] %t", "Config Loaded File", g_sFile);
     }
     else if (g_bConfigError)
     {
-        ReplyToCommand(client, "[Stripper] The current map loaded a stripper config but it contains error(s).");
-        if(bAccess) ReplyToCommand(client, "[Stripper] Check: %s", g_sFile);
+        ReplyToCommand(client, "[Stripper] %t", "Config Error");
+        if(bAccess) ReplyToCommand(client, "[Stripper] %t", "Config Error File", g_sFile);
     }
     else
     {
-        ReplyToCommand(client, "[Stripper] The current map did not load a stripper config.");
-        if(bAccess) ReplyToCommand(client, "[Stripper] No file found: %s", g_sFile);
+        ReplyToCommand(client, "[Stripper] %t", "Config Not Loaded");
+        if(bAccess) ReplyToCommand(client, "[Stripper] %t", "Config Not Found File", g_sFile);
     }
 
     return Plugin_Handled;
@@ -196,7 +198,7 @@ public Action Command_Dump(int client, int args)
 
     delete fi;
 
-    ReplyToCommand(client, "[Stripper] Dumped entities to '%s'", path);
+    ReplyToCommand(client, "[Stripper] %t", "Entities Dumped", path);
     return Plugin_Handled;
 }
 
