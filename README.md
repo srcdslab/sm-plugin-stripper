@@ -12,6 +12,14 @@ Forum thread for this plugin: https://forums.alliedmods.net/showthread.php?t=339
 `sourcemod/configs/stripper/global_filters.cfg` for the global config  
 `sourcemod/configs/stripper/maps/mapname.cfg` for map specific config
 
+### Limits
+- Keys: up to 255 characters.
+- Values: up to 2047 characters, the engine limit for an entity lump value (`MAPKEY_MAXLENGTH`).
+- Outputs (`target,input,param,delay,times`): the engine parses each comma-separated field into a 256-byte buffer, so each field must stay under 256 characters even when the whole line is longer.
+- A config line (`"key" "value"`) must fit in the 4096-byte buffer of the SourceMod config parser.
+
+Longer keys or values are truncated and reported in `logs/stripper/maps/<map>.log`.
+
 ### Cvars
 `stripper_file_lowercase` - Whether to load map config filenames as lower case
 

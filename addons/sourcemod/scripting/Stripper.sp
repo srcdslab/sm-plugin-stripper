@@ -8,11 +8,26 @@
 public Plugin myinfo =
 {
     name		= "Stripper:Source (SP edition)",
-    version		= "1.3.11",
+    version		= "1.3.12",
     description	= "Stripper:Source functionality in a Sourcemod plugin",
     author		= "Original Author: BAILOPAN. Ported to SM by: tilgep. Edited by: Lerrdy, .Rushaway",
     url			= "https://forums.alliedmods.net/showthread.php?t=339448"
 }
+
+// Longest key we keep. Engine keys are short (vbsp caps them at 32), 256 leaves room.
+#define STRIPPER_MAX_KEY	256
+
+// Longest value we keep, including the terminator. The engine parses the entity
+// lump with MAPKEY_MAXLENGTH = 2048: a quoted value of 2048+ chars is cut at 2047
+// and the rest is read as the next token, which desyncs every following key/value
+// pair of the lump (checked 2026-11-12 in hl2sdk css, sdk2013 and tf2_sdk2013):
+// https://github.com/alliedmodders/hl2sdk/blob/6d5c02482085b9b02601cecd0a95661e1bcd64a9/game/shared/mapentities_shared.cpp#L150-L171
+// Output fields (target,input,param,delay,times) are parsed separately by
+// CEventAction into szToken[256]: each field must stay under 256 chars.
+// https://github.com/alliedmodders/hl2sdk/blob/6d5c02482085b9b02601cecd0a95661e1bcd64a9/game/server/cbase.cpp#L116-L135
+// PLATFORM_MAX_PATH is a fixed 256 in SourcePawn, whatever the OS:
+// https://github.com/alliedmodders/sourcemod/blob/f3f696f16e1bc7f8dedc534d3f4556b1820a5f89/plugins/include/files.inc#L75
+#define STRIPPER_MAX_VALUE	2048
 
 enum Mode
 {
@@ -33,8 +48,8 @@ enum SubMode
 
 enum struct Property
 {
-    char key[PLATFORM_MAX_PATH];
-    char val[PLATFORM_MAX_PATH];
+    char key[STRIPPER_MAX_KEY];
+    char val[STRIPPER_MAX_VALUE];
     bool regex;
     Regex compiled;	// Precompiled pattern, valid only when 'regex' is true
 }
@@ -153,6 +168,7 @@ public Action Command_Stripper(int client, int args)
 public Action Command_Dump(int client, int args)
 {
     char buf1[PLATFORM_MAX_PATH], buf2[PLATFORM_MAX_PATH], path[PLATFORM_MAX_PATH];
+    char sKey[STRIPPER_MAX_KEY], sValue[STRIPPER_MAX_VALUE];
     int num = -1;
 
     GetCurrentMap(buf1, PLATFORM_MAX_PATH);
@@ -187,8 +203,15 @@ public Action Command_Dump(int client, int args)
 
         for(int j = 0; j < ent.Length; j++)
         {
-            ent.Get(j, buf1, PLATFORM_MAX_PATH, buf2, PLATFORM_MAX_PATH);
-            fi.WriteLine("\"%s\" \"%s\"", buf1, buf2);
+            ent.Get(j, sKey, sizeof(sKey), sValue, sizeof(sValue));
+
+            // WriteLine formats into a 2048-byte buffer, too small for a full
+            // "key" "value" line: write the pieces unformatted instead.
+            fi.WriteString("\"", false);
+            fi.WriteString(sKey, false);
+            fi.WriteString("\" \"", false);
+            fi.WriteString(sValue, false);
+            fi.WriteString("\"\n", false);
         }
 
         fi.WriteLine("}");
@@ -373,8 +396,16 @@ public SMCResult Config_KeyValue(SMCParser smc, const char[] key, const char[] v
         return SMCParse_Continue;
 
     Property kv;
-    strcopy(kv.key, PLATFORM_MAX_PATH, key);
-    strcopy(kv.val, PLATFORM_MAX_PATH, value);
+    int iKeyLen = strcopy(kv.key, sizeof(kv.key), key);
+    int iValLen = strcopy(kv.val, sizeof(kv.val), value);
+
+    // Never truncate silently: a cut output or match value fails in ways that are hard to trace.
+    if(iKeyLen < strlen(key) || iValLen < strlen(value))
+    {
+        g_bConfigError = true;
+        Stripper_LogError("Key '%s' or its value is too long (%d/%d chars, max %d/%d) and was truncated at section %d in file '%s'",
+            kv.key, strlen(key), strlen(value), sizeof(kv.key) - 1, sizeof(kv.val) - 1, g_iSection, g_sFile);
+    }
 
     bool isMatchable = (target == g_Block.match || target == g_Block.del);
     if(isMatchable && FormatRegex(kv.val, strlen(kv.val)))
@@ -445,7 +476,7 @@ public void RunRemoveFilter()
      * we know it has at least 1 entry here
      */
 
-    char val2[PLATFORM_MAX_PATH];
+    char val2[STRIPPER_MAX_VALUE];
     Property kv;
     EntityLumpEntry entry;
     for(int i, matches, j, index; i < EntityLump.Length(); i++)
@@ -510,7 +541,7 @@ public void RunModifyFilter()
         return;
     }
 
-    char val2[PLATFORM_MAX_PATH];
+    char val2[STRIPPER_MAX_VALUE];
 
     Property kv;
     EntityLumpEntry entry;
