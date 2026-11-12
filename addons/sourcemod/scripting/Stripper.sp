@@ -18,12 +18,15 @@ public Plugin myinfo =
 #define STRIPPER_MAX_KEY	256
 
 // Longest value we keep, including the terminator. The engine parses the entity
-// lump with MAPKEY_MAXLENGTH = 2048 (game/shared/mapentities_shared.h): a quoted
-// value of 2048+ chars is cut at 2047 and the rest is read as the next token,
-// which desyncs every following key/value pair of the lump (checked 2026-11-12
-// in hl2sdk css/sdk2013 and the 2018 engine source).
+// lump with MAPKEY_MAXLENGTH = 2048: a quoted value of 2048+ chars is cut at 2047
+// and the rest is read as the next token, which desyncs every following key/value
+// pair of the lump (checked 2026-11-12 in hl2sdk css, sdk2013 and tf2_sdk2013):
+// https://github.com/alliedmodders/hl2sdk/blob/6d5c02482085b9b02601cecd0a95661e1bcd64a9/game/shared/mapentities_shared.cpp#L150-L171
 // Output fields (target,input,param,delay,times) are parsed separately by
 // CEventAction into szToken[256]: each field must stay under 256 chars.
+// https://github.com/alliedmodders/hl2sdk/blob/6d5c02482085b9b02601cecd0a95661e1bcd64a9/game/server/cbase.cpp#L116-L135
+// PLATFORM_MAX_PATH is a fixed 256 in SourcePawn, whatever the OS:
+// https://github.com/alliedmodders/sourcemod/blob/f3f696f16e1bc7f8dedc534d3f4556b1820a5f89/plugins/include/files.inc#L75
 #define STRIPPER_MAX_VALUE	2048
 
 enum Mode
