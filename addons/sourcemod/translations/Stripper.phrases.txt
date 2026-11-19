@@ -9,6 +9,12 @@
 		"de"		"Für die aktuelle Map ist eine Stripper-Konfiguration geladen."
 		"pt"		"O mapa atual tem uma configuração do stripper carregada."
 		"chi"		"当前地图已加载 stripper 配置。"
+		"pl"		"Aktualna mapa ma załadowaną konfigurację stripper."
+		"tr"		"Mevcut haritada yüklenmiş bir stripper yapılandırması var."
+		"it"		"La mappa attuale ha una configurazione stripper caricata."
+		"ua"		"Для поточної мапи завантажено конфіг stripper."
+		"zho"		"目前地圖已載入 stripper 設定。"
+		"cze"		"Aktuální mapa má načtenou konfiguraci stripperu."
 	}
 	"Config Loaded File"
 	{
@@ -20,6 +26,12 @@
 		"de"		"Geladene Konfiguration: {1}"
 		"pt"		"Configuração carregada: {1}"
 		"chi"		"已加载的配置：{1}"
+		"pl"		"Załadowana konfiguracja: {1}"
+		"tr"		"Yüklenen yapılandırma: {1}"
+		"it"		"Configurazione caricata: {1}"
+		"ua"		"Завантажений конфіг: {1}"
+		"zho"		"已載入的設定：{1}"
+		"cze"		"Načtená konfigurace: {1}"
 	}
 	"Config Error"
 	{
@@ -30,6 +42,12 @@
 		"de"		"Die aktuelle Map hat eine Stripper-Konfiguration geladen, sie enthält aber Fehler."
 		"pt"		"O mapa atual carregou uma configuração do stripper, mas ela contém erros."
 		"chi"		"当前地图已加载 stripper 配置，但其中存在错误。"
+		"pl"		"Aktualna mapa załadowała konfigurację stripper, ale zawiera ona błędy."
+		"tr"		"Mevcut harita bir stripper yapılandırması yükledi ancak içinde hatalar var."
+		"it"		"La mappa attuale ha caricato una configurazione stripper, ma contiene errori."
+		"ua"		"Для поточної мапи завантажено конфіг stripper, але в ньому є помилки."
+		"zho"		"目前地圖已載入 stripper 設定，但其中存在錯誤。"
+		"cze"		"Aktuální mapa načetla konfiguraci stripperu, ale obsahuje chyby."
 	}
 	"Config Error File"
 	{
@@ -41,6 +59,12 @@
 		"de"		"Prüfe: {1}"
 		"pt"		"Verifique: {1}"
 		"chi"		"请检查：{1}"
+		"pl"		"Sprawdź: {1}"
+		"tr"		"Kontrol et: {1}"
+		"it"		"Controlla: {1}"
+		"ua"		"Перевірте: {1}"
+		"zho"		"請檢查：{1}"
+		"cze"		"Zkontrolujte: {1}"
 	}
 	"Config Not Loaded"
 	{
@@ -51,6 +75,12 @@
 		"de"		"Die aktuelle Map hat keine Stripper-Konfiguration geladen."
 		"pt"		"O mapa atual não carregou nenhuma configuração do stripper."
 		"chi"		"当前地图未加载 stripper 配置。"
+		"pl"		"Aktualna mapa nie załadowała konfiguracji stripper."
+		"tr"		"Mevcut harita bir stripper yapılandırması yüklemedi."
+		"it"		"La mappa attuale non ha caricato alcuna configurazione stripper."
+		"ua"		"Для поточної мапи конфіг stripper не завантажено."
+		"zho"		"目前地圖未載入 stripper 設定。"
+		"cze"		"Aktuální mapa nenačetla žádnou konfiguraci stripperu."
 	}
 	"Config Not Found File"
 	{
@@ -62,6 +92,12 @@
 		"de"		"Keine Datei gefunden: {1}"
 		"pt"		"Nenhum arquivo encontrado: {1}"
 		"chi"		"未找到文件：{1}"
+		"pl"		"Nie znaleziono pliku: {1}"
+		"tr"		"Dosya bulunamadı: {1}"
+		"it"		"Nessun file trovato: {1}"
+		"ua"		"Файл не знайдено: {1}"
+		"zho"		"找不到檔案：{1}"
+		"cze"		"Soubor nenalezen: {1}"
 	}
 	"Entities Dumped"
 	{
@@ -73,5 +109,11 @@
 		"de"		"Entitäten nach '{1}' exportiert"
 		"pt"		"Entidades exportadas para '{1}'"
 		"chi"		"实体已导出至 '{1}'"
+		"pl"		"Zapisano encje do '{1}'"
+		"tr"		"Varlıklar '{1}' dosyasına aktarıldı"
+		"it"		"Entità esportate in '{1}'"
+		"ua"		"Ентіті збережено в '{1}'"
+		"zho"		"實體已匯出至 '{1}'"
+		"cze"		"Entity exportovány do '{1}'"
 	}
 }
